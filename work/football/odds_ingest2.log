@@ -1,0 +1,8 @@
+EPL 2024-25: odds inserted=380 skipped=0
+EPL 2025-26: odds inserted=0 skipped=380
+LALIGA 2024-25: odds inserted=265 skipped=115
+LALIGA 2025-26: odds inserted=0 skipped=380
+SERIEA 2024-25: odds inserted=370 skipped=10
+SERIEA 2025-26: odds inserted=0 skipped=380
+DB: /data/loki/fb_site_deploy/work/football/stats.db total_odds_inserted=1015 total_skipped=1265
+odds rows in db: 1015, matches with odds: 1015
