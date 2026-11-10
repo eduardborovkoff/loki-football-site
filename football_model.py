@@ -91,7 +91,7 @@ def outcome_probs(lam_h: float, lam_a: float, max_goals: int = 10, rho: float = 
 def _team_stats(teams: list[dict]) -> dict[str, dict]:
     out: dict[str, dict] = {}
     for t in teams:
-        out[t["team"]] = t
+        out[t.get("team") or t.get("name")] = t
     return out
 
 

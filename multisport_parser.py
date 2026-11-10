@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any
 
 ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports"
-UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) LokiBot/0.1"
+UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
 
 # sport -> ESPN path
 SPORTS = {
@@ -90,7 +90,7 @@ def fetch_espn(sport: str) -> dict:
                 pass
     _RATE.wait()
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json", "Referer": "https://www.espn.com/"})
         with urllib.request.urlopen(req, timeout=20) as r:
             data = r.read()
         cache.write_bytes(data)

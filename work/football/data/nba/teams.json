@@ -1,0 +1,66 @@
+[
+  {
+    "name": "Atlanta Hawks",
+    "sport": "nba"
+  },
+  {
+    "name": "Los Angeles Lakers",
+    "sport": "nba"
+  },
+  {
+    "name": "Charlotte Hornets",
+    "sport": "nba"
+  },
+  {
+    "name": "Cleveland Cavaliers",
+    "sport": "nba"
+  },
+  {
+    "name": "Detroit Pistons",
+    "sport": "nba"
+  },
+  {
+    "name": "Washington Wizards",
+    "sport": "nba"
+  },
+  {
+    "name": "Toronto Raptors",
+    "sport": "nba"
+  },
+  {
+    "name": "Memphis Grizzlies",
+    "sport": "nba"
+  },
+  {
+    "name": "Dallas Mavericks",
+    "sport": "nba"
+  },
+  {
+    "name": "Indiana Pacers",
+    "sport": "nba"
+  },
+  {
+    "name": "Houston Rockets",
+    "sport": "nba"
+  },
+  {
+    "name": "Denver Nuggets",
+    "sport": "nba"
+  },
+  {
+    "name": "Phoenix Suns",
+    "sport": "nba"
+  },
+  {
+    "name": "San Antonio Spurs",
+    "sport": "nba"
+  },
+  {
+    "name": "Golden State Warriors",
+    "sport": "nba"
+  },
+  {
+    "name": "New Orleans Pelicans",
+    "sport": "nba"
+  }
+]

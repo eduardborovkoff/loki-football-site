@@ -1,0 +1,6 @@
+pycache/
+.pyc
+.k945bak
+stats.db.T033_pre_ingest
+stats.db.*bak
+work/football/cache/

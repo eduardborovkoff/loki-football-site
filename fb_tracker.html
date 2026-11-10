@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Футбольная аналитика Loki — Бумажный трекер</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+body{font-family:system-ui,sans-serif;max-width:1200px;margin:0 auto;padding:20px;background:#f7f7f8;color:#222}
+h1{margin:0 0 8px}
+a{color:#2c3e50}
+.warn{background:#fff3cd;border:1px solid #ffc107;padding:10px;border-radius:6px;margin:10px 0;font-size:14px}
+table{width:100%;border-collapse:collapse;margin:12px 0;background:#fff;border-radius:6px;overflow:hidden}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #eee}
+th{background:#2c3e50;color:#fff}
+tr:hover{background:#f1f5f9}
+.pos{color:#27ae60;font-weight:bold}
+.neg{color:#e74c3c;font-weight:bold}
+.card{background:#fff;padding:16px;border-radius:8px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+canvas{max-height:340px}
+.kpi{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
+.kpi div{flex:1;min-width:160px;background:#eef2f7;padding:12px;border-radius:6px;text-align:center}
+.kpi b{display:block;font-size:22px;margin-top:4px}
+</style>
+</head>
+<body>
+<h1>📊 Paper Tracker — циклы алгоритма</h1>
+<p><a href="/">← на главную</a></p>
+<div class="warn">
+<b>18+</b> · Виртуальные (paper) ставки. <b>НЕ реальные деньги. НЕ призыв к ставкам.</b>
+Это трекер валидации алгоритма: цель — ROI > 0 в течение 20+ циклов.
+</div>
+
+<div class="card">
+<h2>Сводка</h2>
+<div class="kpi" id="kpi">
+  <div>Циклов<b id="kpi-cycles">—</b></div>
+  <div>Лучший ROI<b id="kpi-best">—</b></div>
+  <div>Средний ROI<b id="kpi-avg">—</b></div>
+  <div>Всего ставок<b id="kpi-bets">—</b></div>
+</div>
+<p id="empty" style="color:#999">Циклов пока нет. Ждём M051-итератор (k1122) — после каждого цикла записывается snapshot в таблицу cycles.</p>
+</div>
+
+<div class="card">
+<h2>История циклов</h2>
+<table id="cycles"><thead><tr><th>#</th><th>Algo</th><th>Sport</th><th>ROI</th><th>Winrate</th><th>Brier</th><th>Logloss</th><th>MaxDD</th><th>N bets</th><th>Ts</th></tr></thead><tbody></tbody></table>
+</div>
+
+<div class="card">
+<h2>ROI по циклам</h2>
+<canvas id="chart"></canvas>
+</div>
+
+<script>
+async function jget(p){const r=await fetch(p);if(!r.ok)throw new Error(p+' '+r.status);return r.json();}
+function esc(s){return String(s==null?'-':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+function pct(x){return x==null?'—':(x*100).toFixed(2)+'%';}
+function num(x){return x==null?'—':Number(x).toFixed(4);}
+(async()=>{
+  try{
+    const d = await jget('/cycles');
+    const rows = d.cycles || [];
+    if(rows.length===0) return;
+    document.getElementById('empty').style.display='none';
+    document.getElementById('kpi-cycles').textContent = rows.length;
+    const rois = rows.map(r=>r.roi).filter(v=>typeof v==='number');
+    document.getElementById('kpi-best').textContent = rois.length?pct(Math.max(...rois)):'—';
+    document.getElementById('kpi-avg').textContent = rois.length?pct(rois.reduce((a,b)=>a+b,0)/rois.length):'—';
+    document.getElementById('kpi-bets').textContent = rows.reduce((a,r)=>a+(r.n_bets||0),0);
+    const tb = document.querySelector('#cycles tbody');
+    tb.innerHTML = rows.map((r,i)=>{
+      const roi = r.roi, cls = roi>0?'pos':(roi<0?'neg':'');
+      return `<tr><td>${i+1}</td><td>${esc(r.algo_version)}</td><td>${esc(r.sport)}</td><td class="${cls}">${pct(roi)}</td><td>${pct(r.winrate)}</td><td>${num(r.brier)}</td><td>${num(r.logloss)}</td><td>${pct(r.max_dd)}</td><td>${r.n_bets||0}</td><td>${esc(r.ts)}</td></tr>`;
+    }).join('');
+    new Chart(document.getElementById('chart'),{
+      type:'line',
+      data:{labels:rows.map((r,i)=>'#'+(i+1)),datasets:[
+        {label:'ROI %',data:rows.map(r=>r.roi==null?null:(r.roi*100)),borderColor:'#27ae60',tension:0.2},
+      ]},
+      options:{responsive:true,scales:{y:{beginAtZero:true}}}
+    });
+  }catch(e){console.error(e);}
+})();
+</script>
+</body>
+</html>

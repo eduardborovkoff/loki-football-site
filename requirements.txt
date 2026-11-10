@@ -1,1 +1,1 @@
-fastapi
+# No external dependencies needed (stdlib http.server)
