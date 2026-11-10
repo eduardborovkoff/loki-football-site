@@ -31,13 +31,20 @@ def _home() -> Path:
 
 
 def _db_path() -> Path:
-    # S185 Fix for Render
+    """k1120-bugfix T033: приоритет env FOOTBALL_DB, потом LOKI_HOME, потом file-relative.
+    НИКОГДА не CWD, никогда не DROP существующей БД."""
+    env_db = os.environ.get("FOOTBALL_DB")
+    if env_db:
+        return Path(env_db)
     if "LOKI_HOME" in os.environ:
         p_env = Path(os.environ["LOKI_HOME"]) / "work" / "football" / "stats.db"
-        if p_env.exists(): return p_env
+        if p_env.exists():
+            return p_env
     p_abs = Path("/data/asgard/work/football/stats.db")
-    if p_abs.exists(): return p_abs
+    if p_abs.exists():
+        return p_abs
     return Path(__file__).parent.resolve() / "work" / "football" / "stats.db"
+
 def _row_to_dict(row: sqlite3.Row) -> dict:
     return {k: row[k] for k in row.keys()}
 
