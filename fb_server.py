@@ -31,9 +31,13 @@ def _home() -> Path:
 
 
 def _db_path() -> Path:
-    return _home() / "work" / "football" / "stats.db"
-
-
+    # S185 Fix for Render
+    if "LOKI_HOME" in os.environ:
+        p_env = Path(os.environ["LOKI_HOME"]) / "work" / "football" / "stats.db"
+        if p_env.exists(): return p_env
+    p_abs = Path("/data/asgard/work/football/stats.db")
+    if p_abs.exists(): return p_abs
+    return Path(__file__).parent.resolve() / "work" / "football" / "stats.db"
 def _row_to_dict(row: sqlite3.Row) -> dict:
     return {k: row[k] for k in row.keys()}
 
