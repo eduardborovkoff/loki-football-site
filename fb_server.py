@@ -181,6 +181,58 @@ class FbHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
                 return
+            if path == "/backtest":
+                import json as _json
+                bets_path = Path(__file__).resolve().parent / "work" / "football" / "walkforward_bets.jsonl"
+                bets = []
+                if bets_path.exists():
+                    try:
+                        for _l in bets_path.read_text(encoding="utf-8").splitlines():
+                            if _l.strip():
+                                bets.append(_json.loads(_l))
+                    except Exception:
+                        bets = []
+                n_bets = len(bets)
+                wins = sum(1 for b in bets if b.get("win"))
+                total_pnl = sum(float(b.get("pnl", 0)) for b in bets)
+                total_stake = sum(float(b.get("stake", 0)) for b in bets)
+                winrate = (wins / n_bets * 100.0) if n_bets else 0.0
+                roi_pct = (total_pnl / total_stake * 100.0) if total_stake else 0.0
+                cum = peak = mdd = 0.0
+                for b in bets:
+                    cum += float(b.get("pnl", 0))
+                    if cum > peak:
+                        peak = cum
+                    dd = peak - cum
+                    if dd > mdd:
+                        mdd = dd
+                mdd_pct = (mdd / total_stake * 100.0) if total_stake else 0.0
+                buckets = {"edge<0.1": [0, 0, 0.0, 0.0],
+                           "edge0.1-0.2": [0, 0, 0.0, 0.0],
+                           "edge>=0.2": [0, 0, 0.0, 0.0]}
+                for b in bets:
+                    e = float(b.get("edge", 0))
+                    k = "edge<0.1" if e < 0.1 else ("edge0.1-0.2" if e < 0.2 else "edge>=0.2")
+                    buckets[k][0] += 1
+                    buckets[k][1] += 1 if b.get("win") else 0
+                    buckets[k][2] += float(b.get("pnl", 0))
+                    buckets[k][3] += float(b.get("stake", 0))
+                by_edge = []
+                for k, v in buckets.items():
+                    w = (v[1] / v[0] * 100.0) if v[0] else 0.0
+                    r = (v[2] / v[3] * 100.0) if v[3] else 0.0
+                    by_edge.append({"label": k, "n": v[0],
+                                    "winrate_pct": round(w, 2),
+                                    "roi_pct": round(r, 2)})
+                summary = {"n_bets": n_bets, "wins": wins,
+                           "winrate_pct": round(winrate, 2),
+                           "total_pnl": round(total_pnl, 2),
+                           "total_stake": round(total_stake, 2),
+                           "roi_pct": round(roi_pct, 2),
+                           "max_drawdown_abs": round(mdd, 2),
+                           "max_drawdown_pct": round(mdd_pct, 2)}
+                self._send_json(200, {"summary": summary, "by_edge": by_edge, "n": n_bets})
+                return
             if path == "/cycles":
                 rows = []
                 db = _db_path()

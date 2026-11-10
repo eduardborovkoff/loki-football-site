@@ -53,7 +53,7 @@
     <a href="#matches">Матчи</a>
     <a href="#teams">Команды</a>
     <a href="#tracker">Трекер</a>
-    <a href="/tracker">Paper-trading →</a>
+    <a href="#backtest">Бэктест (реальный)</a>
   </nav>
 </header>
 
@@ -84,15 +84,37 @@
     </div>
   </section>
 
-  <section class="card" id="tracker">
-    <h2>Paper-trading циклы (M052) <span style="font-size:11px;color:#f59e0b">— СИНТЕТИКА (проверка пайплайна)</span></h2>
-    <div id="cycles-body" class="empty">Загрузка…</div>
+  <section class="card" id="backtest">
+    <h2>Реальный walk-forward бэктест (M052, 2024-25)</h2>
+    <div class="grid grid-3" style="margin-bottom:16px;">
+      <div class="card" style="background:#0f172a;">
+        <div class="kpi-label">Ставок</div>
+        <div class="kpi" id="bt-n">…</div>
+      </div>
+      <div class="card" style="background:#0f172a;">
+        <div class="kpi-label">Winrate</div>
+        <div class="kpi" id="bt-win">…</div>
+      </div>
+      <div class="card" style="background:#0f172a;">
+        <div class="kpi-label">ROI</div>
+        <div class="kpi" id="bt-roi">…</div>
+      </div>
+      <div class="card" style="background:#0f172a;">
+        <div class="kpi-label">Max Drawdown</div>
+        <div class="kpi" id="bt-mdd">…</div>
+      </div>
+    </div>
+    <div id="backtest-by-edge"></div>
+    <div id="backtest-body" class="empty" style="margin-top:12px;">Загрузка…</div>
+    <p style="font-size:12px;color:#94a3b8;margin-top:12px;">
+      Walk-forward на исторических closing odds football-data.co.uk.
+      Прогноз на матч только по данным ДО него. Negative ROI = базовая модель
+      не бьёт букмекера — это ожидаемо (см. баннер выше).
+    </p>
   </section>
 
   <div class="disclaimer">
-    ⚠️ 18+ Материалы сайта носят аналитический характер и не являются финансовой рекомендацией.<br>* ROI и Winrate — синтетические (Paper Trading). Реальных результатов пока нет.
-    Ставки связаны с риском потери средств. Играйте ответственно.
-  </div>
+    ⚠️ 18+ Материалы сайта носят аналитический характер и не являются финансовой рекомендацией.<br>* ROI и Winrate — исторический walk-forward бэктест на реальных closing odds. Это не прогноз будущей прибыли. </div>
 </main>
 
 <script>
@@ -174,19 +196,32 @@ function renderGoalsChart(data){
   });
 }
 
-function renderCycles(data){
-  const box = document.getElementById('cycles-body');
-  if (!data || !data.cycles || !data.cycles.length){
-    box.innerHTML = '<div class="empty">Циклов пока нет — M052 начнёт прогоны.</div>';
+function renderBacktest(data){
+  const s = (data && data.summary) || {};
+  document.getElementById('bt-n').textContent   = s.n_bets ?? '—';
+  document.getElementById('bt-win').textContent = (s.winrate_pct!=null ? (+s.winrate_pct).toFixed(1)+'%' : '—');
+  document.getElementById('bt-roi').textContent = (s.roi_pct!=null ? ((+s.roi_pct>0?'+':'')+(+s.roi_pct).toFixed(2)+'%') : '—');
+  document.getElementById('bt-mdd').textContent = (s.max_drawdown_pct!=null ? (+s.max_drawdown_pct).toFixed(2)+'%' : '—');
+  const roiEl = document.getElementById('bt-roi');
+  if (s.roi_pct != null) roiEl.style.color = s.roi_pct > 0 ? '#10b981' : '#ef4444';
+  const edgeBox = document.getElementById('backtest-by-edge');
+  const bodyBox = document.getElementById('backtest-body');
+  if (!data || !data.by_edge || !data.by_edge.length){
+    edgeBox.innerHTML = '';
+    bodyBox.innerHTML = '<div class="empty">Нет данных бэктеста.</div>';
     return;
   }
-  const rows = data.cycles.slice(-20).reverse();
-  const html = '<table><thead><tr><th>#</th><th>Algo</th><th>Sport</th><th>ROI*</th><th>Winrate*</th><th>Brier</th><th>n_bets</th></tr></thead><tbody>' +
-    rows.map(c=>`<tr><td>${c.id}</td><td>${esc(c.algo_version||'—')}</td><td>${esc(c.sport||'—')}</td>
-      <td class="odds">${fmtPct(c.roi)}</td><td>${fmtPct(c.winrate)}</td>
-      <td>${c.brier!=null?(+c.brier).toFixed(3):'—'}</td><td>${c.n_bets||0}</td></tr>`).join('') +
+  edgeBox.innerHTML = '<table><thead><tr><th>Edge bucket</th><th>n</th><th>Winrate</th><th>ROI</th></tr></thead><tbody>' +
+    data.by_edge.map(b => '<tr><td>' + esc(b.label) + '</td><td>' + b.n +
+      '</td><td>' + (+b.winrate_pct).toFixed(1) + '%</td>' +
+      '<td style="color:' + (b.roi_pct > 0 ? '#10b981' : '#ef4444') + '">' +
+      ((+b.roi_pct > 0 ? '+' : '') + (+b.roi_pct).toFixed(2)) + '%</td></tr>').join('') +
     '</tbody></table>';
-  box.innerHTML = html;
+  const sideNote = s.total_pnl != null
+    ? '<div style="font-size:13px;color:#94a3b8;margin-top:8px;">Cum PnL: ' +
+      ((+s.total_pnl).toFixed(0)) + ' / stake ' + (+s.total_stake).toFixed(0) + '</div>'
+    : '';
+  bodyBox.innerHTML = sideNote;
 }
 
 async function loadAll(){
@@ -195,7 +230,7 @@ async function loadAll(){
   document.getElementById('health').textContent = h && h.ok ? '● API OK' : '● API недоступен';
 
   const [teams, matches, preds, cycles] = await Promise.all([
-    getJSON('/teams'), getJSON('/matches'), getJSON('/predictions'), getJSON('/cycles'),
+    getJSON('/teams'), getJSON('/matches'), getJSON('/predictions'), getJSON('/backtest'),
   ]);
 
   document.getElementById('kpi-matches').textContent  = matches?.n ?? '—';
@@ -206,7 +241,7 @@ async function loadAll(){
   renderMatches(matches);
   renderTeams(teams);
   renderGoalsChart(teams);
-  renderCycles(cycles);
+  renderBacktest(cycles);
 }
 
 loadAll();
