@@ -53,11 +53,14 @@
     <a href="#matches">Матчи</a>
     <a href="#teams">Команды</a>
     <a href="#tracker">Трекер</a>
-    <a href="/tracker">Paper-ROI →</a>
+    <a href="/tracker">Paper-trading →</a>
   </nav>
 </header>
 
 <main>
+  <div style="margin-bottom:20px;padding:14px;border-radius:10px;background:#3f2a00;border:1px solid #f59e0b;color:#fcd34d;font-size:13px;text-align:center;">
+    ⚠️ <b>Внимание:</b> данные и ROI на странице сгенерированы для проверки пайплайна (Paper Trading). Реальные прогнозы появятся после интеграции парсера реальных исходов.
+  </div>
   <section id="kpi" class="grid grid-3" style="margin-bottom:24px;">
     <div class="card"><div class="kpi-label">Матчей в базе</div><div class="kpi" id="kpi-matches">…</div></div>
     <div class="card"><div class="kpi-label">Завершено (реальные)</div><div class="kpi" id="kpi-finished">…</div></div>
@@ -82,12 +85,12 @@
   </section>
 
   <section class="card" id="tracker">
-    <h2>Paper-trading циклы (M052)</h2>
+    <h2>Paper-trading циклы (M052) <span style="font-size:11px;color:#f59e0b">— СИНТЕТИКА (проверка пайплайна)</span></h2>
     <div id="cycles-body" class="empty">Загрузка…</div>
   </section>
 
   <div class="disclaimer">
-    ⚠️ 18+ Материалы сайта носят аналитический характер и не являются финансовой рекомендацией.
+    ⚠️ 18+ Материалы сайта носят аналитический характер и не являются финансовой рекомендацией.<br>* ROI и Winrate — синтетические (Paper Trading). Реальных результатов пока нет.
     Ставки связаны с риском потери средств. Играйте ответственно.
   </div>
 </main>
@@ -178,7 +181,7 @@ function renderCycles(data){
     return;
   }
   const rows = data.cycles.slice(-20).reverse();
-  const html = '<table><thead><tr><th>#</th><th>Algo</th><th>Sport</th><th>ROI</th><th>Winrate</th><th>Brier</th><th>n_bets</th></tr></thead><tbody>' +
+  const html = '<table><thead><tr><th>#</th><th>Algo</th><th>Sport</th><th>ROI*</th><th>Winrate*</th><th>Brier</th><th>n_bets</th></tr></thead><tbody>' +
     rows.map(c=>`<tr><td>${c.id}</td><td>${esc(c.algo_version||'—')}</td><td>${esc(c.sport||'—')}</td>
       <td class="odds">${fmtPct(c.roi)}</td><td>${fmtPct(c.winrate)}</td>
       <td>${c.brier!=null?(+c.brier).toFixed(3):'—'}</td><td>${c.n_bets||0}</td></tr>`).join('') +
