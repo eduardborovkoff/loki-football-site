@@ -1,0 +1,3 @@
+[form] FAIL OperationalError: table team_form has no column named as_of_ts
+[referee] inserted 30 rows
+{'referee': 30, 'form': 0}

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loki Football — прогнозы на спорт</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --muted:#94a3b8; --fg:#e2e8f0; --acc:#38bdf8; --win:#10b981; --loss:#ef4444; --draw:#f59e0b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--fg); line-height:1.5; }
+  header { padding:20px 24px; background:linear-gradient(90deg,#1e293b,#0f172a);
+           border-bottom:1px solid #334155; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:22px; color:var(--acc); }
+  header .badge { background:#334155; padding:4px 10px; border-radius:12px; font-size:12px; color:var(--muted); }
+  header nav a { color:var(--muted); margin-right:14px; text-decoration:none; font-size:14px; }
+  header nav a:hover { color:var(--acc); }
+  main { max-width:1200px; margin:0 auto; padding:24px; }
+  .grid { display:grid; gap:16px; }
+  .grid-3 { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+  .grid-2 { grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); }
+  .card { background:var(--card); border-radius:12px; padding:18px; border:1px solid #334155; }
+  .card h2 { margin:0 0 12px; font-size:16px; color:var(--acc); text-transform:uppercase; letter-spacing:.05em; }
+  .kpi { font-size:32px; font-weight:700; }
+  .kpi-label { font-size:12px; color:var(--muted); text-transform:uppercase; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th,td { padding:8px 10px; text-align:left; border-bottom:1px solid #334155; }
+  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; }
+  tr:hover td { background:#243447; }
+  .status { display:inline-block; padding:2px 8px; border-radius:8px; font-size:11px; }
+  .status.finished { background:#064e3b; color:#34d399; }
+  .status.scheduled { background:#1e3a8a; color:#60a5fa; }
+  .status.live { background:#7c2d12; color:#fb923c; }
+  .odds { color:var(--acc); font-variant-numeric:tabular-nums; }
+  .disclaimer { margin-top:24px; padding:12px; border-radius:8px; background:#450a0a;
+                color:#fca5a5; font-size:12px; text-align:center; }
+  .empty { color:var(--muted); font-style:italic; padding:20px; text-align:center; }
+  .score { font-weight:700; }
+  .score.w { color:var(--win); }
+  .score.l { color:var(--loss); }
+  .score.d { color:var(--draw); }
+  canvas { max-height:260px; }
+  @media (max-width:640px) { .grid-3,.grid-2 { grid-template-columns:1fr; } main { padding:12px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚽ Loki Football</h1>
+  <span class="badge" id="health">проверка…</span>
+  <nav>
+    <a href="#kpi">Обзор</a>
+    <a href="#matches">Матчи</a>
+    <a href="#teams">Команды</a>
+    <a href="#tracker">Трекер</a>
+    <a href="/tracker">Paper-trading →</a>
+  </nav>
+</header>
+
+<main>
+  <div style="margin-bottom:20px;padding:14px;border-radius:10px;background:#3f2a00;border:1px solid #f59e0b;color:#fcd34d;font-size:13px;text-align:center;">
+    ⚠️ <b>Внимание:</b> данные и ROI на странице сгенерированы для проверки пайплайна (Paper Trading). Реальные прогнозы появятся после интеграции парсера реальных исходов.
+  </div>
+  <section id="kpi" class="grid grid-3" style="margin-bottom:24px;">
+    <div class="card"><div class="kpi-label">Матчей в базе</div><div class="kpi" id="kpi-matches">…</div></div>
+    <div class="card"><div class="kpi-label">Завершено (реальные)</div><div class="kpi" id="kpi-finished">…</div></div>
+    <div class="card"><div class="kpi-label">Команд</div><div class="kpi" id="kpi-teams">…</div></div>
+    <div class="card"><div class="kpi-label">Прогнозов</div><div class="kpi" id="kpi-preds">…</div></div>
+  </section>
+
+  <section id="matches" class="card" style="margin-bottom:24px;">
+    <h2>Последние матчи</h2>
+    <div id="matches-body" class="empty">Загрузка…</div>
+  </section>
+
+  <section class="grid grid-2" style="margin-bottom:24px;">
+    <div class="card" id="teams">
+      <h2>Топ команд по победам</h2>
+      <div id="teams-body" class="empty">Загрузка…</div>
+    </div>
+    <div class="card">
+      <h2>Голы: забито / пропущено</h2>
+      <canvas id="goals-chart"></canvas>
+    </div>
+  </section>
+
+  <section class="card" id="tracker">
+    <h2>Paper-trading циклы (M052) <span style="font-size:11px;color:#f59e0b">— СИНТЕТИКА (проверка пайплайна)</span></h2>
+    <div id="cycles-body" class="empty">Загрузка…</div>
+  </section>
+
+  <div class="disclaimer">
+    ⚠️ 18+ Материалы сайта носят аналитический характер и не являются финансовой рекомендацией.<br>* ROI и Winrate — синтетические (Paper Trading). Реальных результатов пока нет.
+    Ставки связаны с риском потери средств. Играйте ответственно.
+  </div>
+</main>
+
+<script>
+const fmtPct = v => (v==null ? '—' : (v*100).toFixed(1)+'%');
+const fmtOdds = v => (v==null ? '—' : (+v).toFixed(2));
+const fmtScore = (hg,ag) => (hg==null||ag==null ? '—' : `${hg}:${ag}`);
+const esc = s => String(s??'').replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+async function getJSON(url){
+  try {
+    const r = await fetch(url, {cache:'no-store'});
+    if (!r.ok) throw new Error(url+' '+r.status);
+    return await r.json();
+  } catch(e){ console.warn(e); return null; }
+}
+
+function renderMatches(data){
+  const box = document.getElementById('matches-body');
+  if (!data || !data.matches || !data.matches.length){
+    box.innerHTML = '<div class="empty">Матчей пока нет — запусти парсер.</div>';
+    return;
+  }
+  const rows = data.matches.slice().reverse().slice(0, 30);
+  const html = `<table><thead><tr>
+    <th>Дата</th><th>Лига</th><th>Хозяева</th><th>Гости</th>
+    <th>Счёт</th><th>Кф 1/X/2</th><th>Статус</th></tr></thead><tbody>` +
+    rows.map(m => {
+      const d = m.kickoff_ts ? new Date(m.kickoff_ts*1000).toLocaleDateString('ru-RU') : '—';
+      const cls = (m.status||'').includes('заверш') ? 'finished'
+               : (m.status||'').includes('заплан') ? 'scheduled' : 'live';
+      let scoreCls = '';
+      if (m.home_goals!=null && m.away_goals!=null) {
+        scoreCls = m.home_goals>m.away_goals?'w':m.home_goals<m.away_goals?'l':'d';
+      }
+      return `<tr>
+        <td>${d}</td><td>${esc(m.league||'')}</td>
+        <td>${esc(m.home||'')}</td><td>${esc(m.away||'')}</td>
+        <td class="score ${scoreCls}">${fmtScore(m.home_goals, m.away_goals)}</td>
+        <td class="odds">${fmtOdds(m.p1)} / ${fmtOdds(m.px)} / ${fmtOdds(m.p2)}</td>
+        <td><span class="status ${cls}">${esc(m.status||'—')}</span></td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+  box.innerHTML = html;
+}
+
+function renderTeams(data){
+  const box = document.getElementById('teams-body');
+  if (!data || !data.teams || !data.teams.length){
+    box.innerHTML = '<div class="empty">Команд пока нет.</div>';
+    return;
+  }
+  const top = data.teams.slice().sort((a,b)=> (b.wins||0)-(a.wins||0)).slice(0,10);
+  const html = '<table><thead><tr><th>#</th><th>Команда</th><th>В</th><th>Н</th><th>П</th><th>ГЗ</th><th>ГП</th></tr></thead><tbody>' +
+    top.map((t,i)=>`<tr><td>${i+1}</td><td>${esc(t.name)}</td>
+      <td>${t.wins||0}</td><td>${t.draws||0}</td><td>${t.losses||0}</td>
+      <td class="odds">${t.goals_for||0}</td><td>${t.goals_against||0}</td></tr>`).join('') +
+    '</tbody></table>';
+  box.innerHTML = html;
+}
+
+let goalsChart = null;
+function renderGoalsChart(data){
+  if (!data || !data.teams || !data.teams.length) return;
+  const top = data.teams.slice().sort((a,b)=>(b.goals_for||0)-(a.goals_for||0)).slice(0,10);
+  const labels = top.map(t=>t.name);
+  const gf = top.map(t=>t.goals_for||0);
+  const ga = top.map(t=>t.goals_against||0);
+  const ctx = document.getElementById('goals-chart');
+  if (goalsChart) goalsChart.destroy();
+  goalsChart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'Забито', data:gf, backgroundColor:'#10b981' },
+      { label:'Пропущено', data:ga, backgroundColor:'#ef4444' },
+    ]},
+    options:{ indexAxis:'y', responsive:true, plugins:{legend:{labels:{color:'#e2e8f0'}}},
+      scales:{ x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}},
+               y:{ticks:{color:'#e2e8f0'},grid:{color:'#334155'}} } }
+  });
+}
+
+function renderCycles(data){
+  const box = document.getElementById('cycles-body');
+  if (!data || !data.cycles || !data.cycles.length){
+    box.innerHTML = '<div class="empty">Циклов пока нет — M052 начнёт прогоны.</div>';
+    return;
+  }
+  const rows = data.cycles.slice(-20).reverse();
+  const html = '<table><thead><tr><th>#</th><th>Algo</th><th>Sport</th><th>ROI*</th><th>Winrate*</th><th>Brier</th><th>n_bets</th></tr></thead><tbody>' +
+    rows.map(c=>`<tr><td>${c.id}</td><td>${esc(c.algo_version||'—')}</td><td>${esc(c.sport||'—')}</td>
+      <td class="odds">${fmtPct(c.roi)}</td><td>${fmtPct(c.winrate)}</td>
+      <td>${c.brier!=null?(+c.brier).toFixed(3):'—'}</td><td>${c.n_bets||0}</td></tr>`).join('') +
+    '</tbody></table>';
+  box.innerHTML = html;
+}
+
+async function loadAll(){
+  // health
+  const h = await getJSON('/health');
+  document.getElementById('health').textContent = h && h.ok ? '● API OK' : '● API недоступен';
+
+  const [teams, matches, preds, cycles] = await Promise.all([
+    getJSON('/teams'), getJSON('/matches'), getJSON('/predictions'), getJSON('/cycles'),
+  ]);
+
+  document.getElementById('kpi-matches').textContent  = matches?.n ?? '—';
+  document.getElementById('kpi-finished').textContent = (matches?.matches||[]).filter(m=>(m.status||'').includes('заверш')).length;
+  document.getElementById('kpi-teams').textContent    = teams?.n ?? '—';
+  document.getElementById('kpi-preds').textContent    = preds?.n ?? 0;
+
+  renderMatches(matches);
+  renderTeams(teams);
+  renderGoalsChart(teams);
+  renderCycles(cycles);
+}
+
+loadAll();
+setInterval(loadAll, 60000);
+</script>
+</body>
+</html>

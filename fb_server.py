@@ -249,7 +249,7 @@ class FbHandler(BaseHTTPRequestHandler):
                         conn.row_factory = sqlite3.Row
                         try:
                             rows = [_row_to_dict(r) for r in conn.execute(
-                                "SELECT * FROM cycles ORDER BY ts"
+                                "SELECT * FROM cycles WHERE source='real' ORDER BY ts"
                             ).fetchall()]
                         except sqlite3.OperationalError:
                             rows = []
