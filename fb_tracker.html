@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Футбольная аналитика Loki — Бумажный трекер</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -20,7 +20,7 @@ canvas{max-height:340px}
 .kpi{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
 .kpi div{flex:1;min-width:160px;background:#eef2f7;padding:12px;border-radius:6px;text-align:center}
 .kpi b{display:block;font-size:22px;margin-top:4px}
-</style>
+@media (max-width:768px){body{padding:12px;font-size:14px}h1{font-size:20px}.kpi{flex-direction:column;gap:8px}.kpi div{min-width:auto}table{font-size:12px;display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}.card{padding:10px}}</style>
 </head>
 <body>
 <h1>📊 Paper Tracker — циклы алгоритма</h1>
